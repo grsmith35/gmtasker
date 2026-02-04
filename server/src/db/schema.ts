@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, integer, boolean, jsonb, pgEnum, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, integer, boolean, jsonb, pgEnum, uniqueIndex, AnyPgColumn } from "drizzle-orm/pg-core";
 
 export const roleEnum = pgEnum("role", ["gm", "contractor"]);
 export const workOrderStatusEnum = pgEnum("work_order_status", ["open", "in_progress", "on_hold", "needs_review", "closed"]);
@@ -33,7 +33,7 @@ export const sites = pgTable("sites", {
 export const locations = pgTable("locations", {
   id: uuid("id").defaultRandom().primaryKey(),
   siteId: uuid("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
-  parentLocationId: uuid("parent_location_id").references(() => locations.id, { onDelete: "set null" }),
+  parentLocationId: uuid("parent_location_id").references((): AnyPgColumn => locations.id, { onDelete: "set null" }),
   name: text("name").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
