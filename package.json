@@ -6,10 +6,11 @@
     "web"
   ],
   "scripts": {
-    "dev": "npm run dev -w server & npm run dev -w web",
-    "dev:server": "npm run dev -w server",
-    "dev:web": "npm run dev -w web",
-    "docker:up": "docker compose up --build",
-    "docker:down": "docker compose down -v"
-  }
+    "dev": "tsx watch src/index.ts",
+    "worker": "tsx src/worker.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "db:migrate": "tsx src/db/migrate.ts"
+}
+
 }

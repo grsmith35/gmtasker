@@ -1,7 +1,16 @@
 import "dotenv/config";
 import { pool } from "./client.js";
 import { readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+// ...
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// When compiled, this file is dist/db/migrate.js
+// So migrations should be in dist/db/migrations after build
+const dir = join(__dirname, "migrations");
 
 async function main() {
   const client = await pool.connect();
@@ -14,7 +23,12 @@ async function main() {
       );
     `);
 
-    const dir = join(process.cwd(), "src/db/migrations");
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+
+    // When compiled, this file is dist/db/migrate.js
+    // So migrations should be in dist/db/migrations after build
+    const dir = join(__dirname, "migrations");
     const files = readdirSync(dir).filter(f => f.endsWith(".sql")).sort();
 
     for (const file of files) {
