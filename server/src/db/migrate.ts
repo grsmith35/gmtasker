@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { pool } from "./client.js";
 import { readFileSync, readdirSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 
 // ...
@@ -12,7 +12,8 @@ const __dirname = dirname(__filename);
 // So migrations should be in dist/db/migrations after build
 const dir = join(__dirname, "migrations");
 
-async function main() {
+export async function runMigrations(options?: { closePool?: boolean }) {
+  const closePool = options?.closePool ?? false;
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -44,11 +45,17 @@ async function main() {
     console.log("Migrations complete.");
   } catch (e) {
     await client.query("ROLLBACK");
-    console.error(e);
-    process.exitCode = 1;
+    throw e;
   } finally {
     client.release();
-    await pool.end();
+    if (closePool) await pool.end();
   }
 }
-main();
+
+const isDirectRun = Boolean(process.argv[1]) && import.meta.url === pathToFileURL(process.argv[1]!).href;
+if (isDirectRun) {
+  runMigrations({ closePool: true }).catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+}

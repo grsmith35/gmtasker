@@ -11,6 +11,7 @@ import { commentsRouter } from "./routes/comments.js";
 import { completionsRouter } from "./routes/completions.js";
 import { ensureSeed } from "./seed.js";
 import { pool } from "./db/client.js";
+import { runMigrations } from "./db/migrate.js";
 
 const app = express();
 app.use(cors());
@@ -32,16 +33,8 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 
 async function start() {
   await pool.query("SELECT 1;");
-  // ensure schema exists
-  // (docker runs with empty DB; run migrations automatically here)
-  // We'll run the migration tool via code for convenience if __migrations missing.
-  try {
-    await pool.query("SELECT 1 FROM __migrations LIMIT 1;");
-  } catch {
-    console.log("[server] Running migrations...");
-    // lightweight: shelling out isn't ideal; instead just import migrate file.
-    await import("./db/migrate.js");
-  }
+  console.log("[server] Running migrations...");
+  await runMigrations();
   await ensureSeed();
   app.listen(PORT, () => console.log(`[server] listening on http://localhost:${PORT}`));
 }
