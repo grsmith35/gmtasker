@@ -1,0 +1,15 @@
+{
+  "name": "contractor-workorders-v1",
+  "private": true,
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w server & npm run dev -w web",
+    "dev:server": "npm run dev -w server",
+    "dev:web": "npm run dev -w web",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down -v"
+  }
+}

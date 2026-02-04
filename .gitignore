@@ -1,0 +1,49 @@
+# dependencies
+node_modules/
+**/node_modules/
+
+# env files (keep examples committed)
+.env
+.env.*
+!.env.example
+server/.env
+web/.env
+
+# build output
+dist/
+build/
+**/dist/
+**/build/
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# runtime/temp
+tmp/
+temp/
+*.pid
+*.seed
+
+# uploads / generated files
+uploads/
+server/uploads/
+
+# test coverage
+coverage/
+.nyc_output/
+
+# caches
+.cache/
+.eslintcache
+*.tsbuildinfo
+.vite/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
