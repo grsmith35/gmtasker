@@ -13,7 +13,8 @@ export default function CreateTask() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("normal");
-  const [dueAt, setDueAt] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [dueTime, setDueTime] = useState("17:00");
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -29,12 +30,13 @@ export default function CreateTask() {
     setErr(null);
     setLoading(true);
     try {
+      const dueAtValue = dueDate && dueTime ? new Date(`${dueDate}T${dueTime}`).toISOString() : null;
       const wo = await api.createWorkOrder({
         siteId,
         title,
         description,
         priority,
-        dueAt: dueAt ? new Date(dueAt).toISOString() : null,
+        dueAt: dueAtValue,
         locationId: null
       });
       nav(`/tasks/${(wo as any).id}`);
@@ -73,7 +75,18 @@ export default function CreateTask() {
             </div>
             <div>
               <label className="text-sm text-slate-600">Due</label>
-              <Input type="datetime-local" value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
+              <div className="grid grid-cols-1 gap-2">
+                <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                <Select value={dueTime} onChange={(e) => setDueTime(e.target.value)}>
+                  <option value="">—</option>
+                  {Array.from({ length: 96 }, (_, i) => {
+                    const hours = String(Math.floor(i / 4)).padStart(2, "0");
+                    const minutes = String((i % 4) * 15).padStart(2, "0");
+                    const value = `${hours}:${minutes}`;
+                    return <option key={value} value={value}>{value}</option>;
+                  })}
+                </Select>
+              </div>
             </div>
           </div>
           {err && <div className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{err}</div>}

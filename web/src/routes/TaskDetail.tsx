@@ -19,14 +19,19 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 function MoneyInput({ value, onChange }: { value: number | null; onChange: (n: number | null) => void }) {
+  const display = value === null || value === undefined ? "" : (value / 100).toFixed(2);
   return (
     <Input
-      value={value === null || value === undefined ? "" : String(value)}
+      value={display}
       onChange={(e) => {
-        const v = e.target.value.trim();
-        onChange(v === "" ? null : Number(v));
+        const raw = e.target.value.trim();
+        if (raw === "") { onChange(null); return; }
+        const normalized = raw.replace(/[^0-9.]/g, "");
+        const dollars = Number(normalized);
+        if (Number.isNaN(dollars)) return;
+        onChange(Math.round(dollars * 100));
       }}
-      placeholder="cents"
+      placeholder="0.00"
     />
   );
 }
@@ -63,7 +68,8 @@ export default function TaskDetail() {
   const [holdReason, setHoldReason] = useState("");
   const [holdNotes, setHoldNotes] = useState("");
   const [priority, setPriority] = useState("normal");
-  const [dueAt, setDueAt] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [dueTime, setDueTime] = useState("");
 
   useEffect(() => {
     if (!wo) return;
@@ -71,18 +77,26 @@ export default function TaskDetail() {
     setHoldReason(wo.onHoldReason || "");
     setHoldNotes(wo.onHoldNotes || "");
     setPriority(wo.priority || "normal");
-    setDueAt(wo.dueAt ? new Date(wo.dueAt).toISOString().slice(0,16) : "");
+    if (wo.dueAt) {
+      const local = new Date(wo.dueAt);
+      setDueDate(local.toISOString().slice(0, 10));
+      setDueTime(local.toISOString().slice(11, 16));
+    } else {
+      setDueDate("");
+      setDueTime("17:00");
+    }
   }, [wo?.id]);
 
   async function saveDetails() {
     setErr(null);
     try {
+      const dueAtValue = dueDate && dueTime ? new Date(`${dueDate}T${dueTime}`).toISOString() : null;
       await api.updateWorkOrder(id!, {
         status: editStatus,
         onHoldReason: holdReason || null,
         onHoldNotes: holdNotes || null,
         priority,
-        dueAt: dueAt ? new Date(dueAt).toISOString() : null
+        dueAt: dueAtValue
       });
       await load();
     } catch (e:any) { setErr(e.message); }
@@ -220,7 +234,27 @@ export default function TaskDetail() {
             </div>
             <div>
               <label className="text-sm text-slate-600">Due</label>
-              <Input disabled={!canEditGM} type="datetime-local" value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Input
+                  disabled={!canEditGM}
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                />
+                <Select
+                  disabled={!canEditGM}
+                  value={dueTime}
+                  onChange={(e) => setDueTime(e.target.value)}
+                >
+                  <option value="">—</option>
+                  {Array.from({ length: 96 }, (_, i) => {
+                    const hours = String(Math.floor(i / 4)).padStart(2, "0");
+                    const minutes = String((i % 4) * 15).padStart(2, "0");
+                    const value = `${hours}:${minutes}`;
+                    return <option key={value} value={value}>{value}</option>;
+                  })}
+                </Select>
+              </div>
             </div>
             <div>
               <label className="text-sm text-slate-600">Status</label>
@@ -352,11 +386,11 @@ export default function TaskDetail() {
                     </Select>
                   </div>
                   <div>
-                    <label className="text-xs text-slate-600">Quoted total (cents)</label>
+                    <label className="text-xs text-slate-600">Quoted total ($)</label>
                     <MoneyInput value={p.quotedTotalCostCents} onChange={(n) => updatePart(p.id, { quotedTotalCostCents: n })} />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-600">Actual total (cents)</label>
+                    <label className="text-xs text-slate-600">Actual total ($)</label>
                     <MoneyInput value={p.actualTotalCostCents} onChange={(n) => updatePart(p.id, { actualTotalCostCents: n })} />
                   </div>
                 </div>
