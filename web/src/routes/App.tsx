@@ -6,6 +6,7 @@ import TaskDetail from "./TaskDetail";
 import CreateTask from "./CreateTask";
 import Users from "./Users";
 import Contractors from "./Contractors";
+import Configuration from "./Configuration";
 import { clearToken, getUser } from "../lib/api";
 import { Button } from "../ui/Button";
 
@@ -86,6 +87,12 @@ function Layout({ children }: { children: React.ReactNode }) {
                         </button>
                         <button
                           className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                          onClick={() => nav("/config")}
+                        >
+                          Configuration
+                        </button>
+                        <button
+                          className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
                           onClick={() => nav("/users")}
                         >
                           Users
@@ -135,6 +142,7 @@ export default function App() {
         <Route path="/tasks/:id" element={<RequireAuth><TaskDetail /></RequireAuth>} />
         <Route path="/users" element={<RequireGM><Users /></RequireGM>} />
         <Route path="/contractors" element={<RequireGM><Contractors /></RequireGM>} />
+        <Route path="/config" element={<RequireGM><Configuration /></RequireGM>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>

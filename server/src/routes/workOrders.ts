@@ -1,11 +1,13 @@
 import { Router } from "express";
 import { z } from "zod";
 import { db } from "../db/client.js";
-import { workOrders, workOrderAssignments, workOrderParts, users, comments, workOrderEvents, workOrderCompletions, attachments, notificationOutbox } from "../db/schema.js";
+import { workOrders, workOrderAssignments, workOrderParts, users, comments, workOrderEvents, workOrderCompletions, attachments, notificationOutbox, emailConfigs, sites } from "../db/schema.js";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { requireAuth, AuthedRequest } from "../middleware/authMiddleware.js";
 import { HttpError } from "../lib/errors.js";
 import { addEvent } from "../lib/events.js";
+import nodemailer from "nodemailer";
+import { decryptSecret } from "../lib/crypto.js";
 
 export const workOrdersRouter = Router();
 workOrdersRouter.use(requireAuth);
@@ -282,6 +284,48 @@ workOrdersRouter.post("/:id/assign", async (req: AuthedRequest, res, next) => {
         payload: { workOrderId, title: wo.title, link: `${process.env.APP_BASE_URL || ""}/tasks/${workOrderId}` },
         sendAt: new Date()
       });
+    }
+
+    if (assignee.email) {
+      try {
+        const cfg = await db.select().from(emailConfigs)
+          .where(and(eq(emailConfigs.organizationId, req.user!.organizationId), eq(emailConfigs.provider, "gmail")))
+          .limit(1);
+        if (cfg[0]) {
+          const site = (await db.select().from(sites).where(eq(sites.id, wo.siteId)).limit(1))[0];
+          const appPassword = decryptSecret(cfg[0].appPasswordEnc);
+          const transport = nodemailer.createTransport({
+            service: "gmail",
+            auth: { user: cfg[0].gmailAddress, pass: appPassword },
+          });
+
+          const from = cfg[0].fromName ? `${cfg[0].fromName} <${cfg[0].gmailAddress}>` : cfg[0].gmailAddress;
+          const due = wo.dueAt ? new Date(wo.dueAt).toLocaleString() : "—";
+          const link = `${process.env.APP_BASE_URL || ""}/tasks/${workOrderId}`;
+
+          await transport.sendMail({
+            from,
+            to: assignee.email,
+            subject: `New work order assigned: ${wo.title}`,
+            text: [
+              `You have been assigned a new work order.`,
+              ``,
+              `Title: ${wo.title}`,
+              `Priority: ${wo.priority}`,
+              `Status: ${wo.status}`,
+              `Due: ${due}`,
+              `Site: ${site?.name || "—"}`,
+              site?.address ? `Address: ${site.address}` : null,
+              wo.description ? `Description: ${wo.description}` : null,
+              ``,
+              `View: ${link}`,
+            ].filter(Boolean).join("\n"),
+            replyTo: cfg[0].replyTo || undefined,
+          });
+        }
+      } catch (err) {
+        console.warn("[email] Failed to send assignment email", err);
+      }
     }
 
     res.status(201).json(inserted[0]);

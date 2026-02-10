@@ -39,6 +39,11 @@ export const api = {
     const q = params ? "?" + new URLSearchParams(params).toString() : "";
     return request<any>(`/dashboard/contractors/${id}${q}`);
   },
+  testEmailConfig: (data: { gmailAddress?: string; appPassword?: string; fromName?: string; replyTo?: string; testTo: string }) =>
+    request(`/config/email/test`, { method: "POST", body: JSON.stringify(data) }),
+  getEmailConfig: () => request<any>(`/config/email`),
+  saveEmailConfig: (data: { gmailAddress: string; appPassword: string; fromName?: string; replyTo?: string }) =>
+    request(`/config/email`, { method: "PUT", body: JSON.stringify(data) }),
   getWorkOrder: (id: string) => request<any>(`/work-orders/${id}`),
   createWorkOrder: (data: any) => request(`/work-orders`, { method:"POST", body: JSON.stringify(data) }),
   updateWorkOrder: (id: string, data: any) => request(`/work-orders/${id}`, { method:"PATCH", body: JSON.stringify(data) }),

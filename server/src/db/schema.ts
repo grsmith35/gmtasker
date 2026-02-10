@@ -155,3 +155,17 @@ export const notificationOutbox = pgTable("notification_outbox", {
   providerMessageId: text("provider_message_id"),
   error: text("error"),
 });
+
+export const emailConfigs = pgTable("email_configs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull(),
+  gmailAddress: text("gmail_address").notNull(),
+  appPasswordEnc: text("app_password_enc").notNull(),
+  fromName: text("from_name"),
+  replyTo: text("reply_to"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  orgProviderUnique: uniqueIndex("email_configs_org_provider_unique").on(t.organizationId, t.provider),
+}));
