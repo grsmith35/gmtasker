@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { api, getUser } from "../lib/api";
 import { Card } from "../ui/Card";
 import { Button } from "../ui/Button";
@@ -19,6 +19,8 @@ function Badge({ children }: { children: React.ReactNode }) {
 
 export default function Dashboard() {
   const user = getUser()!;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const assignedTo = searchParams.get("assignedTo") || "";
   const [status, setStatus] = useState("open");
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -33,13 +35,14 @@ export default function Dashboard() {
     try {
       const params: Record<string,string> = { status };
       if (user.role === "contractor") params.mine = "1";
+      if (assignedTo && user.role === "gm") params.assignedTo = assignedTo;
       const rows = await api.listWorkOrders(params);
       setItems(rows);
     } catch (e:any) { setErr(e.message); }
     finally { setLoading(false); }
   }
 
-  useEffect(() => { load(); }, [status]);
+  useEffect(() => { load(); }, [status, assignedTo]);
 
   return (
     <div className="space-y-4">
@@ -47,6 +50,11 @@ export default function Dashboard() {
         <div>
           <h1 className="text-2xl font-semibold">Work Orders</h1>
           <p className="text-sm text-slate-600">{user.role === "gm" ? "Manage tasks, parts, and reviews." : "Your assigned tasks."}</p>
+          {assignedTo && user.role === "gm" && (
+            <div className="mt-2 text-xs text-slate-500">
+              Filtered by contractor. <button className="underline" onClick={() => { const next = new URLSearchParams(searchParams); next.delete("assignedTo"); setSearchParams(next); }}>Clear filter</button>
+            </div>
+          )}
         </div>
         <div className="flex gap-2">
           <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-44">

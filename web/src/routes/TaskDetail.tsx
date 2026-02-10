@@ -163,6 +163,7 @@ export default function TaskDetail() {
   const [minutes, setMinutes] = useState("60");
   const [notes, setNotes] = useState("");
   const [photos, setPhotos] = useState<File[]>([]);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   async function submitCompletion() {
     setErr(null);
     try {
@@ -183,6 +184,11 @@ export default function TaskDetail() {
     setErr(null);
     try { await api.close(id!); await load(); }
     catch (e:any) { setErr(e.message); }
+  }
+
+  async function confirmClose() {
+    await closeWO();
+    setShowCloseConfirm(false);
   }
 
   if (err) return <Card className="border-rose-200 bg-rose-50 text-rose-800">{err}</Card>;
@@ -207,7 +213,9 @@ export default function TaskDetail() {
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => nav(-1)}>Back</Button>
-          {user.role === "gm" && wo.status !== "closed" && <Button variant="danger" onClick={closeWO}>Close</Button>}
+          {user.role === "gm" && wo.status !== "closed" && (
+            <Button variant="danger" onClick={() => setShowCloseConfirm(true)}>Close</Button>
+          )}
         </div>
       </div>
 
@@ -496,6 +504,21 @@ export default function TaskDetail() {
             ))}
           </div>
         </Card>
+      )}
+
+      {showCloseConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
+          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+            <div className="text-lg font-semibold">Close work order?</div>
+            <div className="mt-2 text-sm text-slate-600">
+              This will mark the work order as closed. You can’t reopen it without admin help.
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setShowCloseConfirm(false)}>No</Button>
+              <Button variant="danger" onClick={confirmClose}>Yes, close</Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -31,6 +31,14 @@ export const api = {
     const q = params ? "?" + new URLSearchParams(params).toString() : "";
     return request<any[]>(`/work-orders${q}`);
   },
+  getContractorsDashboard: (params?: Record<string,string>) => {
+    const q = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request<any>(`/dashboard/contractors${q}`);
+  },
+  getContractorDetail: (id: string, params?: Record<string,string>) => {
+    const q = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request<any>(`/dashboard/contractors/${id}${q}`);
+  },
   getWorkOrder: (id: string) => request<any>(`/work-orders/${id}`),
   createWorkOrder: (data: any) => request(`/work-orders`, { method:"POST", body: JSON.stringify(data) }),
   updateWorkOrder: (id: string, data: any) => request(`/work-orders/${id}`, { method:"PATCH", body: JSON.stringify(data) }),

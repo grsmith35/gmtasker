@@ -9,6 +9,7 @@ import { sitesRouter } from "./routes/sites.js";
 import { workOrdersRouter } from "./routes/workOrders.js";
 import { commentsRouter } from "./routes/comments.js";
 import { completionsRouter } from "./routes/completions.js";
+import { dashboardRouter } from "./routes/dashboard.js";
 import { ensureSeed } from "./seed.js";
 import { pool } from "./db/client.js";
 import { runMigrations } from "./db/migrate.js";
@@ -26,6 +27,7 @@ app.use("/sites", sitesRouter);
 app.use("/work-orders", workOrdersRouter);
 app.use("/comments", commentsRouter);
 app.use("/completions", completionsRouter);
+app.use("/dashboard", dashboardRouter);
 
 app.use(errorMiddleware);
 

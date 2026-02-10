@@ -35,6 +35,7 @@ workOrdersRouter.get("/", async (req: AuthedRequest, res, next) => {
   try {
     const status = req.query.status as string | undefined;
     const mine = req.query.mine === "1";
+    const assignedTo = req.query.assignedTo as string | undefined;
     const orgId = req.user!.organizationId;
 
     if (mine) {
@@ -44,6 +45,21 @@ workOrdersRouter.get("/", async (req: AuthedRequest, res, next) => {
         JOIN work_order_assignments a ON a.work_order_id = wo.id AND a.unassigned_at IS NULL
         WHERE wo.organization_id = ${orgId}
           AND a.assigned_to_user_id = ${req.user!.userId}
+          ${status ? sql`AND wo.status = ${status}` : sql``}
+        ORDER BY wo.updated_at DESC;
+      `);
+      res.json(rows.rows);
+      return;
+    }
+
+    if (assignedTo) {
+      if (req.user!.role !== "gm" && assignedTo !== req.user!.userId) throw new HttpError(403, "Forbidden");
+      const rows = await db.execute(sql`
+        SELECT wo.*
+        FROM work_orders wo
+        JOIN work_order_assignments a ON a.work_order_id = wo.id AND a.unassigned_at IS NULL
+        WHERE wo.organization_id = ${orgId}
+          AND a.assigned_to_user_id = ${assignedTo}
           ${status ? sql`AND wo.status = ${status}` : sql``}
         ORDER BY wo.updated_at DESC;
       `);
