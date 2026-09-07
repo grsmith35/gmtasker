@@ -41,11 +41,13 @@ services:
         value: disable
       - key: RUN_WORKER_IN_PROCESS
         value: "true"
+      # fromService has no "url" property, only "host" (a bare hostname). The
+      # server prepends https:// in lib/urls.ts.
       - key: APP_BASE_URL
         fromService:
           name: workorders-web
           type: web
-          property: url
+          property: host
       # Completion photos: S3 or Cloudflare R2. The bucket should be PRIVATE —
       # the server signs short-lived read URLs. Without these the server falls
       # back to local disk, which Render wipes on every deploy.
@@ -76,11 +78,12 @@ services:
     buildCommand: npm ci --include=dev && npm run build --workspace web
     staticPublishPath: web/dist
     envVars:
+      # Bare hostname, as above; web/src/lib/api.ts prepends https://.
       - key: VITE_API_BASE
         fromService:
           name: workorders-api
           type: web
-          property: url
+          property: host
     routes:
       # SPA fallback so react-router deep links resolve.
       - type: rewrite

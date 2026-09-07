@@ -7,6 +7,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { requireAuth, AuthedRequest } from "../middleware/authMiddleware.js";
 import { HttpError } from "../lib/errors.js";
 import { addEvent } from "../lib/events.js";
+import { taskLink } from "../lib/urls.js";
 import { storeUpload, signAttachments } from "../lib/storage.js";
 
 // Files are buffered in memory and handed to storeUpload, which writes them to
@@ -74,7 +75,7 @@ completionsRouter.post("/:workOrderId/submit", upload.array("photos", 10), async
         workOrderId,
         toPhone: gm.phone,
         template: "completion_submitted",
-        payload: { workOrderId, title: wo.title, contractor: req.user!.fullName, link: `${process.env.APP_BASE_URL || ""}/tasks/${workOrderId}` },
+        payload: { workOrderId, title: wo.title, contractor: req.user!.fullName, link: taskLink(workOrderId) },
         sendAt: new Date()
       });
     }
@@ -119,7 +120,7 @@ completionsRouter.post("/:workOrderId/review/:completionId", async (req: AuthedR
           workOrderId,
           toPhone: contractor.phone,
           template: "completion_rejected",
-          payload: { workOrderId, title: wo.title, reviewNotes: body.reviewNotes ?? "", link: `${process.env.APP_BASE_URL || ""}/tasks/${workOrderId}` },
+          payload: { workOrderId, title: wo.title, reviewNotes: body.reviewNotes ?? "", link: taskLink(workOrderId) },
           sendAt: new Date()
         });
       }

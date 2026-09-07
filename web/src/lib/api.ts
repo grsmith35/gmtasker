@@ -1,4 +1,7 @@
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:4000";
+// Render's blueprint can only inject a service's bare hostname (fromService
+// exposes "host", not "url"), so VITE_API_BASE may arrive without a scheme.
+const RAW_API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:4000";
+const API_BASE = (/^https?:\/\//i.test(RAW_API_BASE) ? RAW_API_BASE : `https://${RAW_API_BASE}`).replace(/\/+$/, "");
 
 // Attachment URLs are absolute once completion photos live in object storage,
 // but stay relative ("/uploads/...") when the server falls back to local disk.

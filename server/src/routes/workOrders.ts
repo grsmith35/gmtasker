@@ -6,6 +6,7 @@ import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { requireAuth, AuthedRequest } from "../middleware/authMiddleware.js";
 import { HttpError } from "../lib/errors.js";
 import { addEvent } from "../lib/events.js";
+import { taskLink } from "../lib/urls.js";
 import { signAttachments } from "../lib/storage.js";
 import nodemailer from "nodemailer";
 import { decryptSecret } from "../lib/crypto.js";
@@ -282,7 +283,7 @@ workOrdersRouter.post("/:id/assign", async (req: AuthedRequest, res, next) => {
         workOrderId,
         toPhone: assignee.phone,
         template: "assigned",
-        payload: { workOrderId, title: wo.title, link: `${process.env.APP_BASE_URL || ""}/tasks/${workOrderId}` },
+        payload: { workOrderId, title: wo.title, link: taskLink(workOrderId) },
         sendAt: new Date()
       });
     }
@@ -302,7 +303,7 @@ workOrdersRouter.post("/:id/assign", async (req: AuthedRequest, res, next) => {
 
           const from = cfg[0].fromName ? `${cfg[0].fromName} <${cfg[0].gmailAddress}>` : cfg[0].gmailAddress;
           const due = wo.dueAt ? new Date(wo.dueAt).toLocaleString() : "—";
-          const link = `${process.env.APP_BASE_URL || ""}/tasks/${workOrderId}`;
+          const link = taskLink(workOrderId);
 
           await transport.sendMail({
             from,
