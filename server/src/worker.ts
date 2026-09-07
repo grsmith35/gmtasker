@@ -2,6 +2,7 @@ import "dotenv/config";
 import { db } from "./db/client.js";
 import { notificationOutbox } from "./db/schema.js";
 import { and, eq, lte, asc } from "drizzle-orm";
+import { pathToFileURL } from "node:url";
 import { sendSms } from "./lib/sms.js";
 
 function renderTemplate(tpl: string, payload: any) {
@@ -20,7 +21,7 @@ function renderTemplate(tpl: string, payload: any) {
   }
 }
 
-async function tick() {
+export async function tick() {
   const now = new Date();
   const pending = await db.select().from(notificationOutbox)
     .where(and(eq(notificationOutbox.status, "pending"), lte(notificationOutbox.sendAt, now)))
@@ -53,4 +54,10 @@ async function main() {
     await new Promise(r => setTimeout(r, 3000));
   }
 }
-main().catch((e) => { console.error(e); process.exit(1); });
+
+// Only loop when run as its own process (`npm run worker`). When the server
+// imports tick() for the in-process poller, this must not start a second loop.
+const isDirectRun = Boolean(process.argv[1]) && import.meta.url === pathToFileURL(process.argv[1]!).href;
+if (isDirectRun) {
+  main().catch((e) => { console.error(e); process.exit(1); });
+}

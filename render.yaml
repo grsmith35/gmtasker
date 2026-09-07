@@ -1,0 +1,88 @@
+# Render Blueprint for contractor-workorders-v1.
+#
+# This repo is an npm workspaces monorepo, so `npm ci` runs at the root and the
+# individual packages are built with `--workspace`. Deploy with:
+#   Render dashboard -> New -> Blueprint -> point at this repo.
+#
+# After the first deploy, set VITE_API_BASE on the static site to the API's real
+# URL if it differs from the generated one, then trigger a redeploy of the web
+# service so Vite bakes the value into the bundle.
+
+databases:
+  - name: workorders-db
+    plan: free
+    databaseName: workorders
+    ipAllowList: []   # internal connections only
+
+services:
+  - type: web
+    name: workorders-api
+    runtime: node
+    plan: free
+    rootDir: .
+    buildCommand: npm ci --include=dev && npm run build --workspace server
+    # Plain `start` (node dist/index.js), NOT start:render: index.ts already runs
+    # runMigrations() and ensureSeed() on boot, and start:render's db:migrate step
+    # needs tsx, a devDependency that may be pruned from the runtime image.
+    startCommand: npm run start --workspace server
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: workorders-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: APP_CONFIG_SECRET
+        generateValue: true
+      # Render's internal database URL is plaintext inside their network. Switch
+      # PGSSLMODE to "require" if you point DATABASE_URL at an external host.
+      - key: PGSSLMODE
+        value: disable
+      - key: RUN_WORKER_IN_PROCESS
+        value: "true"
+      - key: APP_BASE_URL
+        fromService:
+          name: workorders-web
+          type: web
+          property: url
+      # Completion photos: S3 or Cloudflare R2. The bucket should be PRIVATE —
+      # the server signs short-lived read URLs. Without these the server falls
+      # back to local disk, which Render wipes on every deploy.
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: S3_ENDPOINT        # R2: https://<account-id>.r2.cloudflarestorage.com
+        sync: false
+      - key: S3_REGION          # "auto" for R2, e.g. us-east-1 for AWS
+        sync: false
+      - key: S3_SIGNED_URL_TTL  # seconds a presigned photo URL stays valid
+        sync: false
+      # Twilio is optional — sendSms() logs and no-ops when these are unset.
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_FROM_NUMBER
+        sync: false
+
+  - type: web
+    name: workorders-web
+    runtime: static
+    rootDir: .
+    buildCommand: npm ci --include=dev && npm run build --workspace web
+    staticPublishPath: web/dist
+    envVars:
+      - key: VITE_API_BASE
+        fromService:
+          name: workorders-api
+          type: web
+          property: url
+    routes:
+      # SPA fallback so react-router deep links resolve.
+      - type: rewrite
+        source: /*
+        destination: /index.html

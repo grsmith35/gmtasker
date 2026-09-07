@@ -7,8 +7,11 @@ import { and, eq, isNull } from "drizzle-orm";
 import { requireAuth, AuthedRequest } from "../middleware/authMiddleware.js";
 import { HttpError } from "../lib/errors.js";
 import { addEvent } from "../lib/events.js";
+import { storeUpload, signAttachments } from "../lib/storage.js";
 
-const upload = multer({ dest: "uploads/" });
+// Files are buffered in memory and handed to storeUpload, which writes them to
+// object storage in production and to local disk when the S3_* vars are unset.
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
 export const completionsRouter = Router();
 completionsRouter.use(requireAuth);
@@ -49,13 +52,13 @@ completionsRouter.post("/:workOrderId/submit", upload.array("photos", 10), async
     const completion = inserted[0]!;
     const attRows = [];
     for (const f of files) {
-      const url = `/uploads/${f.filename}`;
+      const stored = await storeUpload(f);
       const arow = await db.insert(attachments).values({
         workOrderId,
         completionId: completion.id,
         uploadedByUserId: req.user!.userId,
         type: "completion_photo",
-        fileUrl: url
+        fileUrl: stored
       }).returning();
       attRows.push(arow[0]);
     }
@@ -76,7 +79,7 @@ completionsRouter.post("/:workOrderId/submit", upload.array("photos", 10), async
       });
     }
 
-    res.status(201).json({ completion, attachments: attRows });
+    res.status(201).json({ completion, attachments: await signAttachments(attRows.filter(Boolean) as any[]) });
   } catch (e) { next(e); }
 });
 

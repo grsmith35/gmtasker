@@ -120,6 +120,8 @@ export const attachments = pgTable("attachments", {
   completionId: uuid("completion_id").references(() => workOrderCompletions.id, { onDelete: "cascade" }),
   uploadedByUserId: uuid("uploaded_by_user_id").notNull().references(() => users.id, { onDelete: "restrict" }),
   type: attachmentTypeEnum("type").notNull(),
+  // Stores an opaque S3 object key (private bucket), or a "/uploads/..." path when
+  // running on the local-disk fallback. The API signs this into a real URL on read.
   fileUrl: text("file_url").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

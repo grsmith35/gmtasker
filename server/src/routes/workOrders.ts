@@ -6,6 +6,7 @@ import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { requireAuth, AuthedRequest } from "../middleware/authMiddleware.js";
 import { HttpError } from "../lib/errors.js";
 import { addEvent } from "../lib/events.js";
+import { signAttachments } from "../lib/storage.js";
 import nodemailer from "nodemailer";
 import { decryptSecret } from "../lib/crypto.js";
 
@@ -149,7 +150,7 @@ workOrdersRouter.get("/:id", async (req: AuthedRequest, res, next) => {
       .where(and(eq(workOrderAssignments.workOrderId, id), isNull(workOrderAssignments.unassignedAt)))
       .limit(1))[0] ?? null;
 
-    res.json({ workOrder: wo, parts, comments: comms, events, completions, attachments: att, assignment: activeAssignment });
+    res.json({ workOrder: wo, parts, comments: comms, events, completions, attachments: await signAttachments(att), assignment: activeAssignment });
   } catch (e) { next(e); }
 });
 

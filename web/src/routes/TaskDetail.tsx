@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { api, getUser } from "../lib/api";
+import { api, getUser, attachmentUrl } from "../lib/api";
 import { Card } from "../ui/Card";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
@@ -448,7 +448,7 @@ export default function TaskDetail() {
               {c.reviewNotes && <div className="text-sm text-amber-700">GM notes: {c.reviewNotes}</div>}
               <div className="flex flex-wrap gap-2">
                 {completionPhotosFor(c.id).map((url: string) => (
-                  <img key={url} src={`${import.meta.env.VITE_API_BASE || "http://localhost:4000"}${url}`} className="h-24 w-24 rounded-lg object-cover border border-slate-100" />
+                  <img key={url} src={attachmentUrl(url)} className="h-24 w-24 rounded-lg object-cover border border-slate-100" />
                 ))}
               </div>
 

@@ -1,4 +1,10 @@
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:4000";
+
+// Attachment URLs are absolute once completion photos live in object storage,
+// but stay relative ("/uploads/...") when the server falls back to local disk.
+export function attachmentUrl(url: string) {
+  return /^https?:\/\//i.test(url) ? url : `${API_BASE}${url}`;
+}
 export type User = { id: string; role: "gm" | "contractor"; fullName: string; email: string };
 
 export function getToken() { return localStorage.getItem("token"); }
